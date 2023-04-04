@@ -1,0 +1,6 @@
+= Deploy with Rsync over SSH
+:experimental:
+:source-highlighter: highlight.js
+:toc: preamble
+
+This repository implements an Ubuntu-based composite GitHub Action that copies files from the GitHub Actions runner to a remote host using the https://manpages.ubuntu.com/manpages/bionic/man1/rsync.1.html[Rsync] tool over SSH.

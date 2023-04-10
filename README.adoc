@@ -1,6 +1,84 @@
 = Deploy with Rsync over SSH
 :experimental:
 :source-highlighter: highlight.js
-:toc: preamble
 
-This repository implements an Ubuntu-based composite GitHub Action that copies files from the GitHub Actions runner to a remote host using the https://manpages.ubuntu.com/manpages/bionic/man1/rsync.1.html[Rsync] tool over SSH.
+This repository implements an Ubuntu-based https://docs.github.com/en/actions/creating-actions/about-custom-actions#composite-actions[composite GitHub Action] that copies files from the GitHub Actions runner to a remote host using the https://manpages.ubuntu.com/manpages/jammy/en/man1/rsync.1.html[Rsync] tool over an SSH connection.
+This provides a way to deploy static files to a web server.
+
+Please read the `action.yml` file to review the specific steps performed by this action:
+In broad terms, it saves the private SSH key and the list of known hosts on the GitHub Actions runner for the duration of the action and executes the `rsync` command with the given input parameters.
+
+== Usage
+. Define a GitHub Actions workflow.
+For example:
++
+[source,yaml]
+----
+# .github/workflows/deploy.yml
+name: Deploy
+on: [ workflow_dispatch ]
+jobs:
+  copy-static-files-to-web-server:
+    name: Copy static files to the web server
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v3
+      - name: Copy the files with Rsync over SSH
+        uses: rainstormy/github-action-deploy-with-rsync-over-ssh@v1
+        with:
+          rsync-options: --archive --compress --verbose --rsh="ssh -l ${{ secrets.SSH_USERNAME }}"
+          rsync-host: ${{ secrets.RSYNC_HOST }}
+          rsync-source-path: www/
+          rsync-destination-path: ${{ secrets.RSYNC_DESTINATION_PATH }}
+          ssh-known-hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+          ssh-private-key-filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+----
++
+Here is another example that uses https://manpages.ubuntu.com/manpages/jammy/en/man1/sshpass.1.html[sshpass] to perform password-based authentication in addition to key-based authentication:
++
+[source,yaml]
+----
+with:
+  rsync-options: --archive --compress --verbose --rsh="sshpass -e ssh -l ${{ secrets.SSH_USERNAME }}"
+  rsync-host: ${{ secrets.RSYNC_HOST }}
+  rsync-source-path: www/
+  rsync-destination-path: ${{ secrets.RSYNC_DESTINATION_PATH }}
+  ssh-known-hosts: ${{ secrets.SSH_KNOWN_HOSTS }}
+  ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+  ssh-private-key-filename: ${{ secrets.SSH_PRIVATE_KEY_FILENAME }}
+env:
+  SSHPASS: ${{ secrets.SSH_PASSWORD }}
+----
+
+. Create https://docs.github.com/en/actions/security-guides/encrypted-secrets[GitHub Actions secrets] for the SSH username, the remote host (e.g. `server123.company.com`), and the destination pathname on the remote (e.g. `~/www`).
+They are to be accessed through input parameters `rsync-options` (in the `--rsh` option), `rsync-host`, and `rsync-destination-path`, respectively.
+
+. Optionally, for password-based authentication, create a GitHub Actions secret for the SSH password to be accessed through the `SSHPASS` environment variable.
+
+. From your own computer, gather the remote host keys and verify that they are authentic to establish a https://developer.mozilla.org/en-US/docs/Glossary/TOFU[trust-on-first-use] relationship:
++
+[source,shell,subs="+quotes,+replacements"]
+----
+$ ssh-keyscan -H *_<remote-host>_* > "$HOME/.ssh/known_hosts"
+----
+
+. Save the remote host keys in a GitHub Actions secret to be accessed through the `ssh-known-hosts` input parameter.
+
+. From your own computer, generate an SSH key with the *Ed25519* algorithm, for example using https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent[ssh-keygen] or https://developer.1password.com/docs/ssh/manage-keys[1Password], and optionally choose a name for the key or use the default name of `id_ed25519` as `*_<my-ssh-key>_*`:
++
+[source,shell,subs="+quotes,+replacements"]
+----
+$ ssh-keygen -t ed25519 -f "$HOME/.ssh/**_<my-ssh-key>_**"
+----
+
+. Grab the *_public_* key and add it to the list of authorised SSH keys on the remote host.
+It appears like `ssh-ed25519 AAAAC3(...)`.
+
+. Save the private key in a GitHub Actions secret to be accessed through the `ssh-private-key` input parameter.
+It appears like `-----BEGIN OPENSSH PRIVATE KEY-----(...)-----END OPENSSH PRIVATE KEY-----`.
+
+. Save the name that you have chosen as `*_<my-ssh-key>_*` in a GitHub Actions secret to be accessed through the `ssh-private-key-filename` input parameter.
+It defines the name of the file in which the private key is stored on the GitHub Actions runner for the duration of the action.
+You may skip this step if you have chosen the default name of `id_ed25519`.

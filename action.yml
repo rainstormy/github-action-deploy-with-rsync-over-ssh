@@ -1,0 +1,48 @@
+name: Deploy with Rsync over SSH
+description: Copies files from the GitHub Actions runner to a remote host using the Rsync tool over an SSH connection.
+author: Steffen Diswal
+inputs:
+  rsync-destination-path:
+    description: The pathname on the remote host to which the files are to be copied.
+    required: true
+  rsync-host:
+    description: The hostname of the remote server onto which the files are to be copied.
+    required: true
+  rsync-options:
+    description: The options to pass to the Rsync tool. Include the `--rsh` option to set the SSH credentials for Rsync.
+    required: true
+  rsync-source-path:
+    description: The pathname on the GitHub Actions runner from which the files are to be copied.
+    required: true
+  ssh-known-hosts:
+    description: A list of trusted remote host keys gathered by the ssh-keyscan utility to be stored temporarily on the GitHub Actions runner.
+    required: true
+  ssh-private-key:
+    description: The private SSH key to be stored temporarily on the GitHub Actions runner in the file designated by the `ssh-private-key-filename` input parameter. It is used by the Rsync tool to establish an SSH connection to the remote host which should know the public SSH key in advance.
+    required: true
+  ssh-private-key-filename:
+    description: The name of the file in the `.ssh` directory on the GitHub Actions runner in which the value of the `ssh-private-key` input parameter is temporarily stored.
+    required: false
+    default: 'id_ed25519'
+runs:
+  using: composite
+  steps:
+    - name: Prepare the SSH configuration
+      run: |
+        mkdir ~/.ssh
+        echo "${{ inputs.ssh-known-hosts }}" > ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+        echo "${{ inputs.ssh-private-key }}" > ~/.ssh/${{ inputs.ssh-private-key-filename }}
+        chmod 600 ~/.ssh/${{ inputs.ssh-private-key-filename }}
+      shell: bash
+
+    - name: Deploy with Rsync
+      run: |
+        rsync ${{ inputs.rsync-options }} ${{ inputs.rsync-source-path }} ${{ inputs.rsync-host }}:${{ inputs.rsync-destination-path }}
+      shell: bash
+
+    - if: always()
+      name: Erase the SSH configuration
+      run: |
+        rm --recursive --force ~/.ssh
+      shell: bash

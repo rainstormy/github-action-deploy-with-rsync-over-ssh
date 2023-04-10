@@ -49,7 +49,7 @@ $ ssh-add ~/.ssh/<my-ssh-key>
 $ git config --global core.sshCommand "C:/Windows/System32/OpenSSH/ssh.exe"
 ----
 
-. Grab the **_public_** key.
+. Grab the *_public_* key.
 It appears like `ssh-ed25519 AAAAC3(...)`.
 +
 [source,shell,subs="+quotes,+replacements"]

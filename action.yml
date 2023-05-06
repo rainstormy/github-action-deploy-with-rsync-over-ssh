@@ -27,18 +27,65 @@ inputs:
 runs:
   using: composite
   steps:
+    - name: Verify declaration of input parameters
+      env:
+        RSYNC_DESTINATION_PATH: ${{ inputs.rsync-destination-path }}
+        RSYNC_HOST: ${{ inputs.rsync-host }}
+        RSYNC_OPTIONS: ${{ inputs.rsync-options }}
+        RSYNC_SOURCE_PATH: ${{ inputs.rsync-source-path }}
+        SSH_KNOWN_HOSTS: ${{ inputs.ssh-known-hosts }}
+        SSH_PRIVATE_KEY: ${{ inputs.ssh-private-key }}
+        SSH_PRIVATE_KEY_FILENAME: ${{ inputs.ssh-private-key-filename }}
+      run: |
+        if [[ -z "$RSYNC_DESTINATION_PATH" ]]; then
+          echo "The input parameter 'rsync-destination-path' must be non-empty."
+          exit 1
+        fi
+        if [[ -z "$RSYNC_HOST" ]]; then
+          echo "The input parameter 'rsync-host' must be non-empty."
+          exit 1
+        fi
+        if [[ -z "$RSYNC_OPTIONS" ]]; then
+          echo "The input parameter 'rsync-options' must be non-empty."
+          exit 1
+        fi
+        if [[ -z "$RSYNC_SOURCE_PATH" ]]; then
+          echo "The input parameter 'rsync-source-path' must be non-empty."
+          exit 1
+        fi
+        if [[ -z "$SSH_KNOWN_HOSTS" ]]; then
+          echo "The input parameter 'ssh-known-hosts' must be non-empty."
+          exit 1
+        fi
+        if [[ -z "$SSH_PRIVATE_KEY" ]]; then
+          echo "The input parameter 'ssh-private-key' must be non-empty."
+          exit 1
+        fi
+        if [[ -z "$SSH_PRIVATE_KEY_FILENAME" ]]; then
+          echo "The input parameter 'ssh-private-key-filename' must be non-empty."
+          exit 1
+        fi
+      shell: bash
+
     - name: Prepare the SSH configuration
+      env:
+        SSH_KNOWN_HOSTS: ${{ inputs.ssh-known-hosts }}
+        SSH_PRIVATE_KEY: ${{ inputs.ssh-private-key }}
+        SSH_PRIVATE_KEY_FILENAME: ${{ inputs.ssh-private-key-filename }}
       run: |
         mkdir ~/.ssh
-        echo "${{ inputs.ssh-known-hosts }}" > ~/.ssh/known_hosts
+        echo "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
         chmod 644 ~/.ssh/known_hosts
-        echo "${{ inputs.ssh-private-key }}" > ~/.ssh/${{ inputs.ssh-private-key-filename }}
-        chmod 600 ~/.ssh/${{ inputs.ssh-private-key-filename }}
+        echo "$SSH_PRIVATE_KEY" > ~/.ssh/"$SSH_PRIVATE_KEY_FILENAME"
+        chmod 600 ~/.ssh/"$SSH_PRIVATE_KEY_FILENAME"
       shell: bash
 
     - name: Deploy with Rsync
+      env:
+        RSYNC_DESTINATION_PATH: ${{ inputs.rsync-destination-path }}
+        RSYNC_HOST: ${{ inputs.rsync-host }}
       run: |
-        rsync ${{ inputs.rsync-options }} ${{ inputs.rsync-source-path }} ${{ inputs.rsync-host }}:${{ inputs.rsync-destination-path }}
+        rsync ${{ inputs.rsync-options }} ${{ inputs.rsync-source-path }} "$RSYNC_HOST":"$RSYNC_DESTINATION_PATH"
       shell: bash
 
     - if: always()

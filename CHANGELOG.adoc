@@ -1,0 +1,20 @@
+= Changelog
+:experimental:
+:source-highlighter: highlight.js
+
+This file documents all notable changes to this project.
+The format is based on https://keepachangelog.com/en/1.1.0[Keep a Changelog], and this project adheres to https://semver.org/spec/v2.0.0.html[Semantic Versioning].
+
+== https://github.com/rainstormy/github-action-deploy-with-rsync-over-ssh/compare/v1.0.1\...HEAD[Unreleased]
+
+== https://github.com/rainstormy/github-action-deploy-with-rsync-over-ssh/compare/v1.0.0\...v1.0.1[1.0.1] - 2023-05-06
+=== Added
+* https://choosealicense.com/licenses/mit[MIT license].
+
+=== Fixed
+* Verify that all input parameters have been defined.
+
+== https://github.com/rainstormy/github-action-deploy-with-rsync-over-ssh/releases/tag/v1.0.0[1.0.0] - 2023-04-10
+
+=== Added
+* GitHub Actions entrypoint.
